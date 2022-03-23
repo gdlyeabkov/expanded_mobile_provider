@@ -1,6 +1,12 @@
 import 'package:flutter/material.dart';
 
 import 'package:call_log/call_log.dart';
+import 'package:flutter/services.dart';
+import 'package:intl/intl.dart';
+import 'package:mobileprovider/detalization.dart';
+import 'package:mobile_number/mobile_number.dart';
+
+import 'costs.dart';
 
 void main() {
   runApp(const MyApp());
@@ -17,71 +23,49 @@ class MyApp extends StatelessWidget {
         primarySwatch: Colors.blue,
       ),
       home: const MyHomePage(),
+      routes: {
+        '/main': (context) => const MyHomePage(),
+        '/costs': (context) => const CostsPage(),
+        '/detalization': (context) => const DetalizationPage()
+      }
     );
   }
 }
 
 class MyHomePage extends StatefulWidget {
+
   const MyHomePage({Key? key}) : super(key: key);
+
   @override
   State<MyHomePage> createState() => _MyHomePageState();
+
 }
 
 class _MyHomePageState extends State<MyHomePage> {
 
   int currentTab = 0;
-  List<GestureDetector> logs = [];
+  String phoneNumber = '';
 
-  addLog(CallLogEntry record, context) {
-    String? contactName = record.name;
-    String? awardDesc = record.name;
-    String? awardType = record.name;
-    // List<String> rawAwardDateTime = awardDesc.split(' ');
-    // String rawAwardDate = rawAwardDateTime[0];
-    // List<String> rawAwardDateParts = rawAwardDate.split('.');
-    // String rawAwardDateDay = rawAwardDateParts[0];
-    // String rawAwardDateMonth = rawAwardDateParts[1];
-    // String rawAwardDateYear = rawAwardDateParts[2];
-    // int awardDateMonth = int.parse(rawAwardDateMonth);
-    // String awardDateMonthLabel = "monthsLabels[awardDateMonth]!";
-    // String correctAwardDateMonth = rawAwardDateMonth;
-    // if (correctAwardDateMonth.length == 1) {
-    //   correctAwardDateMonth = '0${correctAwardDateMonth}';
-    // }
-    // DateTime pickedDate = DateTime.parse('${rawAwardDateYear}-${correctAwardDateMonth}-${rawAwardDateDay}');
-    // String weekDayKey = DateFormat('EEEE').format(pickedDate);
-    String? weekDayLabel = "weekDayLabels[weekDayKey]";
-    String awardWeekDay = weekDayLabel;
-    String awardDate = '{awardWeekDay}, {rawAwardDateDay} {awardDateMonthLabel}';
-    GestureDetector award = GestureDetector(
-        child: Column(
-            children: [
-              Image.network(
-                  'https://cdn2.iconfinder.com/data/icons/flat-pack-1/64/Trophy-256.png',
-                  width: 75
-              ),
-              Text(
-                '$contactName',
-                textAlign: TextAlign.center,
-              ),
-              Text(
-                awardDate,
-                textAlign: TextAlign.center,
-              ),
-            ]
-        )
-    );
-    logs.add(award);
-  }
-
-  Future<Iterable<CallLogEntry>> getCallLogs() async {
-    Iterable<CallLogEntry> entries = await CallLog.get();
-    return entries;
+  Future<void> initMobileNumberState() async {
+    if (!await MobileNumber.hasPhonePermission) {
+      await MobileNumber.requestPhonePermission;
+      return;
+    }
+    // Platform messages may fail, so we use a try/catch PlatformException.
+    try {
+      String rawPhoneNumber = (await MobileNumber.mobileNumber)!;
+      List<String> phoneParts = rawPhoneNumber.split('\+');
+      phoneNumber = phoneParts[1];
+      print('phoneNumber: ${phoneNumber}');
+    } on PlatformException catch (e) {
+      debugPrint("Failed to get mobile number because of '${e.message}'");
+    }
   }
 
   @override
   void initState() {
     super.initState();
+    initMobileNumberState();
   }
 
   @override
@@ -91,7 +75,34 @@ class _MyHomePageState extends State<MyHomePage> {
       length: 5,
       child: Scaffold(
         appBar: AppBar(
-          title: Text('Softtrack Мобильный оператор связи'),
+          title: DropdownButton<String>(
+            value: phoneNumber,
+            icon: const Icon(
+              Icons.arrow_drop_down
+            ),
+            isExpanded: true,
+            underline: Container(
+              height: 2,
+              color: Colors.deepPurpleAccent,
+            ),
+            onTap: () {
+
+            },
+            onChanged: (String? newValue) {
+
+              setState(() {
+                phoneNumber = newValue!;
+              });
+            },
+            items: [
+              DropdownMenuItem(
+                child: Text(
+                  phoneNumber
+                ),
+                value: phoneNumber
+              )
+            ]
+          ),
           bottom: TabBar(
             onTap: (index) {
               print('currentTabIndex: ${index}');
@@ -129,7 +140,7 @@ class _MyHomePageState extends State<MyHomePage> {
                   ),
                   GestureDetector(
                     onTap: () {
-
+                      Navigator.pushNamed(context, '/costs');
                     },
                     child: Container(
                       margin: EdgeInsets.all(
@@ -143,41 +154,69 @@ class _MyHomePageState extends State<MyHomePage> {
                       decoration: BoxDecoration(
                         color: Color.fromARGB(255, 255, 255, 255)
                       ),
-                    )
-                  ),
-                  FutureBuilder(
-                    future: getCallLogs(),
-                    builder: (BuildContext context, AsyncSnapshot<Iterable<CallLogEntry>> snapshot) {
-                      int snapshotsCount = 0;
-                      if (snapshot.data != null) {
-                        snapshotsCount = snapshot.data!.length;
-                        logs = [];
-                        for (int snapshotIndex = 0; snapshotIndex < snapshotsCount; snapshotIndex++) {
-                          addLog(snapshot.data!.elementAt(snapshotIndex), context);
-                        }
-                      }
-                      if (snapshot.hasData) {
-                        return Column(
-                          children: [
-                            Container(
-                              height: 250,
-                              child: SingleChildScrollView(
-                                child: Column(
-                                  children: logs
+                      child: Column(
+                        children: [
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text(
+                                'Март'
+                              ),
+                              Text(
+                                '0 Р'
+                              )
+                            ]
+                          ),
+                          LinearProgressIndicator(
+                            backgroundColor: Color.fromARGB(255, 253, 162, 79),
+                            color: Color.fromARGB(255, 255, 0, 200),
+                            value: 0.7,
+                          ),
+                          Row(
+                            children: [
+                              Container(
+                                child: Icon(
+                                  Icons.circle,
+                                  color: Color.fromARGB(255, 255, 0, 200)
+                                ),
+                                margin: EdgeInsets.only(
+                                  left: 15
+                                )
+                              ),
+                              Container(
+                                child: Text(
+                                  'Сообщения'
+                                ),
+                                margin: EdgeInsets.only(
+                                    left: 15
+                                )
+                              ),
+                              Container(
+                                child: Icon(
+                                  Icons.circle,
+                                  color: Color.fromARGB(255, 253, 162, 79)
+                                ),
+                                margin: EdgeInsets.only(
+                                  left: 15
+                                )
+                              ),
+                              Container(
+                                child: Text(
+                                  'Звонки'
+                                ),
+                                margin: EdgeInsets.only(
+                                  left: 15
                                 )
                               )
-                            )
-                          ]
-                        );
-                      } else {
-                        return Column(
-
-                        );
-                      }
-                      return Column(
-
-                      );
-                    }
+                            ]
+                          ),
+                          Text(
+                            'Подробнее',
+                            textAlign: TextAlign.right,
+                          )
+                        ]
+                      )
+                    )
                   )
                 ]
               )
