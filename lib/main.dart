@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import 'package:call_log/call_log.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_native_splash/flutter_native_splash.dart';
 import 'package:intl/intl.dart';
 import 'package:mobileprovider/detalization.dart';
 import 'package:mobile_number/mobile_number.dart';
@@ -9,6 +10,8 @@ import 'package:mobile_number/mobile_number.dart';
 import 'costs.dart';
 
 void main() {
+  WidgetsBinding widgetsBinding = WidgetsFlutterBinding.ensureInitialized();
+  FlutterNativeSplash.preserve(widgetsBinding: widgetsBinding);
   runApp(const MyApp());
 }
 
@@ -65,6 +68,7 @@ class _MyHomePageState extends State<MyHomePage> {
   @override
   void initState() {
     super.initState();
+    FlutterNativeSplash.remove();
     initMobileNumberState();
   }
 
